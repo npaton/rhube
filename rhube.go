@@ -1,14 +1,25 @@
 package rhube
 
 import (
-	// "log"
+// "log"
+// "io"
 )
 
 type DB struct {
-	KeyValuePairs map[string][]byte
+	StringsMap map[string][]byte
+	HashesMap  map[string]map[string]string
+	SetsMap    map[string]map[string]bool
 }
 
 func NewDB() *DB {
-	return &DB{KeyValuePairs: make(map[string][]byte)}
+	return &DB{
+		StringsMap: make(map[string][]byte),
+		HashesMap:  make(map[string]map[string]string),
+		SetsMap:    make(map[string]map[string]bool),
+	}
 }
 
+type Value interface {
+	MarshalRhube() ([]byte, error)
+	UnmarshalRhube([]byte) error
+}
