@@ -73,7 +73,6 @@ func (db *DB) Sinter(keys ...string) []string {
 
 	var skip bool
 	for member, _ := range shortest {
-
 		skip = false
 		for key := range keys {
 			if skip {
@@ -83,6 +82,7 @@ func (db *DB) Sinter(keys ...string) []string {
 			other := db.SetsMap[keys[key]]
 			if other[member] == false {
 				skip = true
+				break
 			}
 		}
 
@@ -176,13 +176,13 @@ func (db *DB) Sunion(keys ...string) []string {
 func (db *DB) Sunionstore(destination string, keys ...string) int {
 	vals := db.Sunion(keys...)
 	set := make(map[string]bool, 0)
-	
+
 	var count int
 	for i, l := 0, len(vals); i < l; i++ {
 		set[vals[i]] = true
 		count++
 	}
-	
+
 	db.SetsMap[destination] = set
 	return count
 }

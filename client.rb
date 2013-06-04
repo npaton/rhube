@@ -31,7 +31,7 @@ puts "#{Time.now-t}s"
 
 t = Time.now
 1000.times do
-	RedisRhube.info
+	# RedisRhube.info
 	RedisRhube.get "toto"
 	RedisRhube.set "toto", "42\n42"
 end
