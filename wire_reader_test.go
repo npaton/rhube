@@ -2,8 +2,8 @@ package rhube
 
 import (
 	// "log"
-	// "strconv"
 	"bytes"
+	"strconv"
 	"testing"
 )
 
@@ -67,4 +67,33 @@ func TestWireReader(t *testing.T) {
 
 }
 
+var bigVal string
 
+const bigValSize = 10000000 // ~10MB
+
+func init() {
+	bigVal = string(make([]byte, bigValSize))
+}
+
+func TestWireReaderLarge(t *testing.T) {
+	in := "*3\r\n$3\r\nset\r\n$3\r\nfoo\r\n$" + strconv.Itoa(bigValSize) + "\r\n" + bigVal + "\r\n"
+	// t.Error(in)
+	buf := bytes.NewBuffer([]byte(in))
+	w := NewWireReader(buf)
+
+	args, err := w.ReadCommand()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	if args[0] != "set" || args[1] != "foo" || args[2] != bigVal {
+		t.Fatalf("args is not get bigVal:", args, len(args[2]))
+	}
+
+	// EOF
+	args, err = w.ReadCommand()
+	if err == nil {
+		t.Fatal("err should not be nil!")
+	}
+
+}

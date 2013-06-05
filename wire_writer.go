@@ -45,8 +45,8 @@ func (w *WireWriter) WriteIntReply(i int) (err error) {
 	return err
 }
 
-func (w *WireWriter) WriteBoolReply(b bool) (err error) {
-	if b {
+func (w *WireWriter) WriteBoolReply(truth bool) (err error) {
+	if truth {
 		err = w.WriteIntReply(1)
 	} else {
 		err = w.WriteIntReply(0)
@@ -55,15 +55,24 @@ func (w *WireWriter) WriteBoolReply(b bool) (err error) {
 }
 
 func (w *WireWriter) WriteBulkReply(data []byte) (err error) {
+	if data == nil {
+		_, err = w.ww.WriteString("$-1\r\n")
+		if err != nil {
+			return err
+		}
+	}
+	
 	l := len(data)
 	_, err = w.ww.WriteString("$" + strconv.Itoa(l) + WireSep)
 	if err != nil {
 		return err
 	}
+	
 	_, err = w.ww.Write(data)
 	if err != nil {
 		return err
 	}
+	
 	_, err = w.ww.Write([]byte(WireSep))
 	if err != nil {
 		return err
@@ -88,11 +97,13 @@ func (w *WireWriter) WriteMultiBulkReply(data [][]byte) (err error) {
 		if err != nil {
 			return err
 		}
+		
 		_, err = w.ww.Write([]byte(WireSep))
 		if err != nil {
 			return err
 		}
 	}
+	
 	w.ww.Flush()
 	return err
 }

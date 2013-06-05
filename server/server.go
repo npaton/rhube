@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"os"
+	// "strconv"
 )
 
 func main() {
@@ -36,12 +37,12 @@ func handleConn(c net.Conn, db *rhube.DB) {
 			if err == io.EOF {
 				fmt.Println("Connection closed.")
 				return
-				return
 			} else {
 				fmt.Println(err)
 				os.Exit(1)
 			}
 		}
+		
 		// fmt.Println("args:", args)
 		switch args[0] {
 		case "info":
@@ -49,7 +50,8 @@ func handleConn(c net.Conn, db *rhube.DB) {
 		case "get":
 			w.WriteBulkReply(db.Get(args[1]))
 		case "set":
-			w.WriteBoolReply(db.Set(args[1], []byte(args[2])))
+			db.Set(args[1], []byte(args[2]))
+			w.WriteStatusReply("OK")
 		}
 	}
 }
