@@ -1,8 +1,10 @@
 package rhube
 
 import (
-	//	"log"
+	"fmt"
+	"math"
 	"strconv"
+	// "github.com/hotei/bits"
 )
 
 func (db *DB) Get(key string) []byte {
@@ -10,17 +12,70 @@ func (db *DB) Get(key string) []byte {
 }
 
 func (db *DB) Set(key string, val []byte) bool {
+	oldValue, exists := db.StringsMap[key]
+	if exists && string(oldValue) == string(val) {
+		return true
+	}
+
+	db.Del(key) // Set overrides anything
 	db.StringsMap[key] = val
 	return true
 }
 
 func (db *DB) Getset(key string, newValue []byte) ([]byte, error) {
 	val := db.StringsMap[key]
+	if string(val) == string(newValue) {
+		return val, nil
+	}
+
+	db.Del(key) // Set overrides anything
 	db.StringsMap[key] = newValue
 	return val, nil
 }
 
+func (db *DB) Getbit(key string, offset int) int {
+	db.validateKeyType(key, "string")
+	val := db.StringsMap[key]
+	if val == nil {
+		return 0
+	}
+	pos := math.Ceil(float64(offset) / 8.0)
+	if len(val) < int(pos) {
+		return 0
+	}
+
+	offsetRem := math.Remainder(float64(val[int(pos-1)]), 8.0)
+	return int(val[int(pos-1)]) & int(offsetRem)
+}
+
+func (db *DB) Setbit(key string, offset int, bit bool) int {
+	db.validateKeyType(key, "string")
+	original := db.Getbit(key, offset)
+	val := db.StringsMap[key]
+
+	pos := math.Ceil(float64(offset) / 8.0)
+	if len(val) < int(pos) {
+		for len(val) < int(pos) {
+			val = append(val, byte(0x00))
+		}
+	}
+	offsetRem := math.Remainder(float64(val[int(pos-1)]), 1.0)
+	fmt.Println("pos", offset, pos, string(val), offsetRem, bit, val[int(pos-1)], float64(val[int(pos-1)]))
+	v := val[int(pos-1)]
+	if bit {
+		v = byte(v | byte(offsetRem))
+	} else {
+		v = byte(v &^ byte(offsetRem))
+	}
+	val[int(pos-1)] = v
+
+	db.StringsMap[key] = val
+	return original
+}
+
 func (db *DB) Decrby(key string, decrement int) (int, error) {
+	db.validateKeyType(key, "string")
+
 	val := db.StringsMap[key]
 	if val == nil {
 		db.StringsMap[key] = []byte(strconv.Itoa(-decrement))
@@ -41,6 +96,8 @@ func (db *DB) Decr(key string) (int, error) {
 }
 
 func (db *DB) Incrby(key string, increment int) (int, error) {
+	db.validateKeyType(key, "string")
+
 	val := db.StringsMap[key]
 	if val == nil {
 		db.StringsMap[key] = []byte(strconv.Itoa(increment))
@@ -61,6 +118,8 @@ func (db *DB) Incr(key string) (int, error) {
 }
 
 func (db *DB) Incrbyfloat(key string, increment float64) (string, error) {
+	db.validateKeyType(key, "string")
+
 	val := db.StringsMap[key]
 	if val == nil {
 		str := strconv.FormatFloat(increment, 'f', -1, 64)
@@ -79,18 +138,27 @@ func (db *DB) Incrbyfloat(key string, increment float64) (string, error) {
 }
 
 func (db *DB) Append(key string, val []byte) int {
+	db.validateKeyType(key, "string")
+
 	val = append(db.StringsMap[key], val...)
 	db.StringsMap[key] = val
 	return len(val)
 }
 
 func (db *DB) Strlen(key string) int {
+	db.validateKeyType(key, "string")
+
 	return len(db.StringsMap[key])
 }
 
 func (db *DB) Getrange(key string, start, stop int) []byte {
+	db.validateKeyType(key, "string")
+
 	val := db.StringsMap[key]
 	length := len(val)
+	if length == 0 {
+		return []byte(val)
+	}
 	if stop < 0 {
 		stop = length + (stop + 1)
 	}
@@ -110,6 +178,8 @@ func (db *DB) Getrange(key string, start, stop int) []byte {
 }
 
 func (db *DB) Setrange(key string, offset int, value []byte) int {
+	db.validateKeyType(key, "string")
+
 	val := db.StringsMap[key]
 	length := len(val)
 
@@ -137,7 +207,6 @@ func (db *DB) Mget(keys ...string) [][]byte {
 	result := make([][]byte, 0, len(keys))
 	for i := range keys {
 		val := db.StringsMap[keys[i]]
-		// log.Println(i, keys[i], val)
 		result = append(result, val)
 	}
 	return result
@@ -172,25 +241,3 @@ func (db *DB) Msetnx(args ...string) bool {
 
 	return true
 }
-
-// type intValue int
-
-// func (i *intValue) MarshalRhube() ([]byte, error) {
-// 	return []byte(strconv.Itoa(int(*i))), nil
-// }
-
-// func (i *intValue) UnmarshalRhube(val []byte) error {
-// 	a, err := strconv.Atoi(string(val))
-// 	*i = intValue(a)
-// 	return err
-// }
-
-// func TestIntValue(t *testing.T) {
-// 	valInt := intValue(3)
-// 	val, _ := valInt.MarshalRhube()
-// 	intVal := intValue(10)
-// 	intVal.UnmarshalRhube(val)
-// 	if int(intVal) != 3 {
-// 		t.Fatalf("should be 3, no? %+v", intVal)
-// 	}
-// }

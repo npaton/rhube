@@ -30,10 +30,8 @@ func (w *WireReader) ReadCommand() (args []string, err error) {
 		return nil, err
 	}
 
-	// fmt.Println(num)
 	args = make([]string, num)
 	for i := 0; i < num; i++ {
-		// fmt.Println(i)
 		arg, err := w.readArg()
 		if err != nil {
 			return args, err

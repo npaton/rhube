@@ -1,7 +1,8 @@
 package rhube
 
 import (
-	// "log"
+	"bytes"
+	"encoding/binary"
 	"strconv"
 	"testing"
 )
@@ -13,6 +14,25 @@ func TestGetSet(t *testing.T) {
 	if string(val) != "12" {
 		t.Fatalf("Wierd!")
 	}
+}
+
+func TestGetbit(t *testing.T) {
+	t.Skip("bitops not there yet ")
+	db := NewDB()
+
+	var n int64
+	b := []byte("hoho")
+	buf := bytes.NewBuffer(b)
+	binary.Write(buf, binary.LittleEndian, &n)
+	buf = bytes.NewBuffer([]byte(""))
+	binary.Read(buf, binary.LittleEndian, &n)
+
+	t.Fatal("heh", string(buf.Bytes()), n)
+
+	db.Setbit("ho", 3, true)
+	db.Setbit("ho", 7, true)
+
+	t.Fatalf("", db.Getbit("ho", 3))
 }
 
 func TestDecr(t *testing.T) {

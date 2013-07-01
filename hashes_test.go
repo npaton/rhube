@@ -1,7 +1,6 @@
 package rhube
 
 import (
-	// "log"
 	"testing"
 )
 

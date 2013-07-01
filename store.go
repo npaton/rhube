@@ -1,16 +1,15 @@
 package rhube
 
 import (
-	// "bufio"
 	"bytes"
 	"encoding/binary"
 	"encoding/hex"
-	"strconv"
-	// "github.com/willf/bitset"
+	"errors"
 	"io"
 	"log"
 	"math/big"
 	"os"
+	"strconv"
 )
 
 var sharedBuffer []byte
@@ -24,24 +23,24 @@ func (db *DB) Load(fileName string) error {
 
 	sharedBuffer = make([]byte, 1000000) // ~1MB
 
-	n, err := f.Read(sharedBuffer[:9])
+	_, err = f.Read(sharedBuffer[:9])
 
 	magickString := string(sharedBuffer)
-	if n != 9 || err != nil {
-		log.Println("File corrupt. (" + err.Error() + ")")
+	if err != nil {
+		return err
 	}
 
 	if magickString[:5] != "REDIS" {
-		log.Println("File corrupt. Missing Magick string.")
+		return errors.New("File corrupt. Missing Magick string.")
 	}
 
 	if magickString[5:9] != "0006" {
-		log.Println("RDB version is not 6, only v6 supported atm. -" + magickString[5:9] + "- ")
+		return errors.New("RDB version is not 6, only v6 supported atm. -" + magickString[5:9] + "- ")
 	}
 
 	// DB Number (FE+LengthEnc)
-	n, err = f.Read(sharedBuffer[:1])
-	// log.Println(hex.EncodeToString(sharedBuffer[:1]))
+	_, err = f.Read(sharedBuffer[:1])
+
 	dbNum := readLength(f)
 	log.Println("Reading DB " + strconv.Itoa(int(dbNum)))
 

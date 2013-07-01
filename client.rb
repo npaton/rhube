@@ -25,21 +25,25 @@ RedisRhube = Redis.new(:port => 6380)
 # puts RedisRhube.get("totoo")
 
 # val = "a"*1048575
-val = "a"*100000000
-# val = "a"*100
-times = 1
+# val = "a"*1048575
+val = "a"*100
+times = 100000 #000
 
 t = Time.now
-times.times do
-	RedisRef.set "toto", val
-	raise if RedisRef.get("toto") != val
+times.times do |i|
+	# RedisRef.set "test:#{i}", val
+	RedisRef.sadd "test:set:a", "val#{i}"
+	# raise if RedisRef.get("test:#{i}") != val
+	# RedisRef.expire "test:#{i}", 2
 end
 puts "#{Time.now-t}s"
 
 t = Time.now
-times.times do
-	RedisRhube.set "toto", val
-	raise if RedisRhube.get("toto") != val
+times.times do |i|
+	# RedisRhube.set "test:#{i}", val
+	RedisRhube.sadd "test:set:a", "val#{i}"
+	# raise if RedisRhube.get("test:#{i}") != val
+	# RedisRhube.expire "test:#{i}", 2
 end
 puts "#{Time.now-t}s"
 

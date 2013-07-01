@@ -1,12 +1,9 @@
 package rhube
 
-import (
-// "log"
-
-// "strconv"
-)
-
+// Adds one or more members to a set
 func (db *DB) Sadd(key string, members ...string) int {
+	db.validateKeyType(key, "set")
+
 	set := db.SetsMap[key]
 	if set == nil {
 		db.SetsMap[key] = make(map[string]bool)
@@ -14,10 +11,10 @@ func (db *DB) Sadd(key string, members ...string) int {
 	}
 
 	addedCount := 0
-	for member := range members {
-		if set[members[member]] == false {
+	for _, member := range members {
+		if set[member] == false {
 			addedCount++
-			set[members[member]] = true
+			set[member] = true
 		}
 	}
 
@@ -25,16 +22,18 @@ func (db *DB) Sadd(key string, members ...string) int {
 }
 
 func (db *DB) Srem(key string, members ...string) int {
+	db.validateKeyType(key, "set")
+
 	set := db.SetsMap[key]
 	if set == nil {
 		return 0
 	}
 
 	removedCount := 0
-	for member := range members {
-		if set[members[member]] == true {
+	for _, member := range members {
+		if set[member] == true {
 			removedCount++
-			delete(db.SetsMap[key], members[member])
+			delete(db.SetsMap[key], member)
 		}
 	}
 
@@ -42,6 +41,8 @@ func (db *DB) Srem(key string, members ...string) int {
 }
 
 func (db *DB) Sismember(key string, member string) bool {
+	db.validateKeyType(key, "set")
+
 	set := db.SetsMap[key]
 	if set == nil {
 		return false
@@ -51,6 +52,8 @@ func (db *DB) Sismember(key string, member string) bool {
 }
 
 func (db *DB) Scard(key string) int {
+	db.validateKeyType(key, "set")
+
 	set := db.SetsMap[key]
 	if set == nil {
 		return 0
@@ -60,13 +63,17 @@ func (db *DB) Scard(key string) int {
 }
 
 func (db *DB) Sinter(keys ...string) []string {
+	for _, key := range keys {
+		db.validateKeyType(key, "set")	
+	}
+
 	var result []string
 	shortest := db.SetsMap[keys[0]]
 	shortestLength := len(shortest)
-	for key := range keys {
-		length := len(db.SetsMap[keys[key]])
+	for _, key := range keys {
+		length := len(db.SetsMap[key])
 		if length < shortestLength {
-			shortest = db.SetsMap[keys[key]]
+			shortest = db.SetsMap[key]
 			shortestLength = length
 		}
 	}
@@ -74,12 +81,12 @@ func (db *DB) Sinter(keys ...string) []string {
 	var skip bool
 	for member, _ := range shortest {
 		skip = false
-		for key := range keys {
+		for _, key := range keys {
 			if skip {
 				continue
 			}
 
-			other := db.SetsMap[keys[key]]
+			other := db.SetsMap[key]
 			if other[member] == false {
 				skip = true
 				break
@@ -95,6 +102,11 @@ func (db *DB) Sinter(keys ...string) []string {
 }
 
 func (db *DB) Sinterstore(destination string, keys ...string) int {
+	db.validateKeyType(destination, "set")	
+	for _, key := range keys {
+		db.validateKeyType(key, "set")	
+	}
+
 	vals := db.Sinter(keys...)
 	set := make(map[string]bool, 0)
 	var count int
@@ -107,6 +119,8 @@ func (db *DB) Sinterstore(destination string, keys ...string) int {
 }
 
 func (db *DB) Smembers(key string) []string {
+	db.validateKeyType(key, "set")
+
 	set := db.SetsMap[key]
 	if set == nil {
 		return nil
@@ -123,6 +137,10 @@ func (db *DB) Smembers(key string) []string {
 }
 
 func (db *DB) Smove(source, destination, member string) bool {
+	db.validateKeyType(source, "set")	
+	db.validateKeyType(destination, "set")	
+	db.validateKeyType(member, "set")
+
 	setSource := db.SetsMap[source]
 	if setSource == nil || setSource[member] == false {
 		return false
@@ -139,6 +157,8 @@ func (db *DB) Smove(source, destination, member string) bool {
 }
 
 func (db *DB) Srandmember(key string) string {
+	db.validateKeyType(key, "set")
+
 	set := db.SetsMap[key]
 	if set == nil {
 		return ""
@@ -152,17 +172,23 @@ func (db *DB) Srandmember(key string) string {
 }
 
 func (db *DB) Spop(key string) string {
+	db.validateKeyType(key, "set")
+
 	member := db.Srandmember(key)
 	db.Srem(key, member)
 	return member
 }
 
 func (db *DB) Sunion(keys ...string) []string {
+	for _, key := range keys {
+		db.validateKeyType(key, "set")	
+	}
+
 	var result []string
 	seen := make(map[string]bool)
 
-	for key := range keys {
-		for val, _ := range db.SetsMap[keys[key]] {
+	for _, key := range keys {
+		for val, _ := range db.SetsMap[key] {
 			if seen[val] == false {
 				result = append(result, val)
 				seen[val] = true
@@ -174,6 +200,12 @@ func (db *DB) Sunion(keys ...string) []string {
 }
 
 func (db *DB) Sunionstore(destination string, keys ...string) int {
+	db.validateKeyType(destination, "set")	
+	for _, key := range keys {
+		db.validateKeyType(key, "set")	
+	}
+
+
 	vals := db.Sunion(keys...)
 	set := make(map[string]bool, 0)
 

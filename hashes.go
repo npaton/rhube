@@ -1,11 +1,12 @@
 package rhube
 
 import (
-	// "log"
 	"strconv"
 )
 
 func (db *DB) Hget(key, field string) string {
+	db.validateKeyType(key, "hash")
+	
 	hash := db.HashesMap[key]
 	if hash == nil {
 		return ""
@@ -18,6 +19,8 @@ func (db *DB) Hget(key, field string) string {
 }
 
 func (db *DB) Hset(key, field, value string) bool {
+	db.validateKeyType(key, "hash")
+	
 	hash := db.HashesMap[key]
 	newField := false
 
@@ -37,6 +40,8 @@ func (db *DB) Hset(key, field, value string) bool {
 }
 
 func (db *DB) Hsetnx(key, field, value string) bool {
+	db.validateKeyType(key, "hash")
+	
 	hash := db.HashesMap[key]
 
 	if hash == nil {
@@ -54,6 +59,8 @@ func (db *DB) Hsetnx(key, field, value string) bool {
 }
 
 func (db *DB) Hmset(key string, args ...string) bool {
+	db.validateKeyType(key, "hash")
+	
 	l := len(args)
 
 	for i := 0; i < l/2; i++ {
@@ -70,20 +77,24 @@ func (db *DB) Hmset(key string, args ...string) bool {
 }
 
 func (db *DB) Hmget(key string, fields ...string) []string {
+	db.validateKeyType(key, "hash")
+	
 	result := make([]string, 0, len(fields))
 	hash := db.HashesMap[key]
 	if hash == nil {
 		return nil
 	}
 
-	for field := range fields {
-		result = append(result, hash[fields[field]])
+	for _, field := range fields {
+		result = append(result, hash[field])
 	}
 
 	return result
 }
 
 func (db *DB) Hexist(key string, field string) bool {
+	db.validateKeyType(key, "hash")
+	
 	hash := db.HashesMap[key]
 	if hash == nil {
 		return false
@@ -93,6 +104,8 @@ func (db *DB) Hexist(key string, field string) bool {
 }
 
 func (db *DB) Hdel(key string, fields ...string) int {
+	db.validateKeyType(key, "hash")
+	
 	hash := db.HashesMap[key]
 	if hash == nil {
 		return 0
@@ -106,11 +119,14 @@ func (db *DB) Hdel(key string, fields ...string) int {
 	}
 	if len(db.HashesMap[key]) == 0 {
 		delete(db.HashesMap, key)
+		db.cancelExpireKey(key)
 	}
 	return fieldsChanged
 }
 
 func (db *DB) Hgetall(key string) map[string]string {
+	db.validateKeyType(key, "hash")
+	
 	hash := db.HashesMap[key]
 	if hash == nil {
 		return nil
@@ -120,6 +136,8 @@ func (db *DB) Hgetall(key string) map[string]string {
 }
 
 func (db *DB) Hincrby(key, field string, increment int) (int, error) {
+	db.validateKeyType(key, "hash")
+	
 	hash := db.HashesMap[key]
 	if hash == nil {
 		hash = make(map[string]string)
@@ -140,6 +158,8 @@ func (db *DB) Hincrby(key, field string, increment int) (int, error) {
 }
 
 func (db *DB) Hincrbyfloat(key, field string, increment float64) (string, error) {
+	db.validateKeyType(key, "hash")
+	
 	hash := db.HashesMap[key]
 	if hash == nil {
 		hash = make(map[string]string)
@@ -160,13 +180,15 @@ func (db *DB) Hincrbyfloat(key, field string, increment float64) (string, error)
 }
 
 func (db *DB) Hkeys(key string) []string {
+	db.validateKeyType(key, "hash")
+	
 	hash := db.HashesMap[key]
 	if hash == nil {
 		return nil
 	}
 
 	var result []string
-	for key := range hash {
+	for key, _ := range hash {
 		if key != "" {
 			result = append(result, key)
 		}
@@ -175,6 +197,8 @@ func (db *DB) Hkeys(key string) []string {
 }
 
 func (db *DB) Hlen(key string) int {
+	db.validateKeyType(key, "hash")
+	
 	hash := db.HashesMap[key]
 	if hash == nil {
 		return 0
@@ -184,15 +208,17 @@ func (db *DB) Hlen(key string) int {
 }
 
 func (db *DB) Hvals(key string) []string {
+	db.validateKeyType(key, "hash")
+	
 	hash := db.HashesMap[key]
 	if hash == nil {
 		return nil
 	}
 
 	var result []string
-	for key := range hash {
-		if key != "" {
-			result = append(result, hash[key])
+	for key, val := range hash {
+		if key != "" && val != "" {
+			result = append(result, val)
 		}
 	}
 	return result

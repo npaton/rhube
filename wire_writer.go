@@ -55,25 +55,7 @@ func (w *WireWriter) WriteBoolReply(truth bool) (err error) {
 }
 
 func (w *WireWriter) WriteBulkReply(data []byte) (err error) {
-	if data == nil {
-		_, err = w.ww.WriteString("$-1\r\n")
-		if err != nil {
-			return err
-		}
-	}
-	
-	l := len(data)
-	_, err = w.ww.WriteString("$" + strconv.Itoa(l) + WireSep)
-	if err != nil {
-		return err
-	}
-	
-	_, err = w.ww.Write(data)
-	if err != nil {
-		return err
-	}
-	
-	_, err = w.ww.Write([]byte(WireSep))
+	err = w.writeKey(string(data))
 	if err != nil {
 		return err
 	}
@@ -88,22 +70,77 @@ func (w *WireWriter) WriteMultiBulkReply(data [][]byte) (err error) {
 	}
 
 	for _, chunk := range data {
-		_, err = w.ww.WriteString("$" + strconv.Itoa(len(chunk)) + WireSep)
-		if err != nil {
-			return err
-		}
-
-		_, err = w.ww.Write(chunk)
-		if err != nil {
-			return err
-		}
-		
-		_, err = w.ww.Write([]byte(WireSep))
+		err = w.writeKey(string(chunk))
 		if err != nil {
 			return err
 		}
 	}
-	
+
 	w.ww.Flush()
+	return err
+}
+
+// TODO: dry up, WriteMultiBulkReply and WriteStringMultiBulkReply are awefully alike
+func (w *WireWriter) WriteStringMultiBulkReply(data []string) (err error) {
+	_, err = w.ww.WriteString("*" + strconv.Itoa(len(data)) + WireSep)
+	if err != nil {
+		return err
+	}
+
+	for _, chunk := range data {
+		err = w.writeKey(string(chunk))
+		if err != nil {
+			return err
+		}
+	}
+
+	w.ww.Flush()
+	return err
+}
+
+// TODO: dry up, WriteMultiBulkReply and WriteStringMultiBulkReply are awefully alike
+func (w *WireWriter) WriteHashMultiBulkReply(data map[string]string) (err error) {
+	_, err = w.ww.WriteString("*" + strconv.Itoa(len(data)) + WireSep)
+	if err != nil {
+		return err
+	}
+
+	for key, value := range data {
+		err = w.writeKey(key)
+		if err != nil {
+			return err
+		}
+		err = w.writeKey(value)
+		if err != nil {
+			return err
+		}
+	}
+
+	w.ww.Flush()
+	return err
+}
+
+func (w *WireWriter) writeKey(key string) error {
+	if key == "" {
+		_, err := w.ww.WriteString("$-1\r\n")
+		if err != nil {
+			return err
+		}
+	}
+
+	_, err := w.ww.WriteString("$" + strconv.Itoa(len(key)) + WireSep)
+	if err != nil {
+		return err
+	}
+
+	_, err = w.ww.Write([]byte(key))
+	if err != nil {
+		return err
+	}
+
+	_, err = w.ww.Write([]byte(WireSep))
+	if err != nil {
+		return err
+	}
 	return err
 }

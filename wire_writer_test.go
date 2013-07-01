@@ -7,8 +7,6 @@ import (
 	"testing"
 )
 
-var shouldMatch = "*1\r\n$4\r\ninfo\r\n"
-
 func TestWireWriterStatus(t *testing.T) {
 	buf := bytes.NewBuffer([]byte(""))
 	w := NewWireWriter(buf)
